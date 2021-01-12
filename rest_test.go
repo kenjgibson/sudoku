@@ -15,9 +15,18 @@ import (
 	"testing"
 )
 
+//  To do:  figure out how to pass the URL as a parameter to Go test
 const targetURL = "http://localhost:8000/sudoku/solve"
 const contType = "application/json"
 const horzLine = "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+
+// Descriptor for each test case to run
+
+type testCase struct {
+	name    string
+	errCase bool //Success == test failure
+	puzzle  [9][9]sudoku.CelVal
+}
 
 //  Hard-code some test games
 
@@ -80,6 +89,13 @@ var hardGrid = [9][9]sudoku.CelVal{
 	{0, 5, 4, 0, 0, 0, 9, 0, 1},
 	{0, 0, 7, 0, 0, 0, 4, 0, 0}}
 
+var testList = []testCase{
+	{"Value out of range", true, ooRangeGrid},
+	{"Illegal puzzle", true, illegalGrid},
+	{"Easy puzzle", false, easyGrid},
+	{"Medium puzzle", false, medGrid},
+	{"Hard puzzle", false, hardGrid}}
+
 func printGrid(gp *sudoku.Grid) {
 
 	for row := 0; row < sudoku.GridSize; row++ {
@@ -136,93 +152,29 @@ func doPost(testGrid *sudoku.JsonGrid) error {
 	return err
 }
 
-func TestJsonOoRange(t *testing.T) {
+func TestAll(t *testing.T) {
 
 	var testGrid sudoku.JsonGrid
-	var err error
 
-	testGrid.Solution = ooRangeGrid
-	testGrid.Status = ""
+	for _, tc := range testList {
+		testGrid.Solution = tc.puzzle
+		testGrid.Status = ""
 
-	if err = doPost(&testGrid); err != nil {
-		err = fmt.Errorf("ooRange test: %s", err)
-		t.Error(err)
-		return
+		if err := doPost(&testGrid); err != nil {
+			err = fmt.Errorf("%s: %s", tc.name, err)
+			t.Error(err)
+			return
+		}
+
+		if testGrid.Status == "Success" && !tc.errCase {
+			fmt.Printf("\nPASS: %s\n", tc.name)
+			printGrid(&testGrid.Solution)
+		} else if tc.errCase {
+			fmt.Printf("\nPASS error case: %s\n", tc.name)
+		} else {
+			errString := fmt.Sprintf("FAIL: Test %s returned: %s", tc.name, testGrid.Status)
+			fmt.Printf("Status returned: %s\n", testGrid.Status)
+			t.Error(errString)
+		}
 	}
-
-	if testGrid.Status == "Success" {
-		errString := fmt.Sprintf("Failed to catch ooRange.  Returned: %s", testGrid.Status)
-		t.Error(errString)
-	} else {
-		fmt.Printf("\nCaught ooRange: %s\n", testGrid.Status)
-	}
-}
-
-func TestIllegal(t *testing.T) {
-
-	var testGrid sudoku.JsonGrid
-	var err error
-
-	testGrid.Solution = illegalGrid
-	testGrid.Status = ""
-
-	if err = doPost(&testGrid); err != nil {
-		err = fmt.Errorf("illegal test: %s", err)
-		t.Error(err)
-		return
-	}
-
-	if testGrid.Status == "Success" {
-		errString := fmt.Sprintf("Failed to catch illegal game config: %s", testGrid.Status)
-		t.Error(errString)
-	} else {
-		fmt.Printf("\nCaught illegal: %s\n", testGrid.Status)
-	}
-}
-
-func TestEasy(t *testing.T) {
-
-	var testGrid sudoku.JsonGrid
-	var err error
-
-	testGrid.Solution = easyGrid
-	testGrid.Status = ""
-
-	if err = doPost(&testGrid); err != nil {
-		err = fmt.Errorf("illegal test: %s", err)
-		t.Error(err)
-		return
-	}
-
-	if testGrid.Status != "Success" {
-		errString := fmt.Sprintf("Failed easy puzzle.  Returned: %s", testGrid.Status)
-		t.Error(errString)
-	} else {
-		fmt.Printf("\nReturned success solving easy puzzle:\n")
-		printGrid(&testGrid.Solution)
-	}
-}
-
-func TestHard(t *testing.T) {
-
-	var testGrid sudoku.JsonGrid
-	var err error
-
-	testGrid.Solution = hardGrid
-	testGrid.Status = ""
-
-	if err = doPost(&testGrid); err != nil {
-		err = fmt.Errorf("illegal test: %s", err)
-		t.Error(err)
-		return
-	}
-
-	if testGrid.Status != "Success" {
-		errString := fmt.Sprintf("Failed hard puzzle.  Returned:: %s", testGrid.Status)
-		t.Error(errString)
-	} else {
-		fmt.Printf("\nReturned success solving hard puzzle:\n")
-		printGrid(&testGrid.Solution)
-	}
-
 }
