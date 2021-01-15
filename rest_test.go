@@ -16,7 +16,7 @@ import (
 )
 
 //  To do:  figure out how to pass the URL as a parameter to Go test
-const targetURL = "http://localhost:8000/sudoku/solve"
+const targetURL = "https://sudoku-pzkazplyhq-uw.a.run.app/sudoku/solve"
 const contType = "application/json"
 const horzLine = "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
 

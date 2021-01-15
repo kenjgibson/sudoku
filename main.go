@@ -15,7 +15,7 @@
 //
 
 //
-// Main function for cloud-hosted sudoku solver Microservice.  Accepts
+// Main function for GCP-hosted sudoku solver Microservice.  Accepts
 // a JSON-encoded sudoku grid (Go JsonGrid struct) via an http Post message,
 // verifies a valid puzzle and returns a solved JsonGrid struct, if solvable.
 // Otherwise returns error.
@@ -26,9 +26,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kenjgibson/sudoku/sudoku"
 	"log"
 	"net/http"
-	"github.com/kenjgibson/sudoku/sudoku"
+	"os"
 )
 
 var getString = `Sudoku Solver API.
@@ -48,8 +49,22 @@ The service will populate the Status field with a status string.  If a solution
 is possible, the Solution grid will contain a solved Sudoku puzzle.`
 
 func main() {
+	log.Print("Starting Sudoku server...")
+
 	http.HandleFunc("/sudoku/solve", solver)
-	log.Fatal(http.ListenAndServe("localhost:8000", nil))
+
+	// Determine if Port to use is set by environment var
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("defaulting to port %s", port)
+	}
+
+	// Start the HTTP/REST server
+	log.Printf("listening on port %s", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func solver(respP http.ResponseWriter, reqP *http.Request) {
